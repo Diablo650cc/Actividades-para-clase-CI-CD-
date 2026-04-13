@@ -1,18 +1,30 @@
 name: CI-CD Pipeline
+
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: List files (debug)
         run: ls -la
-      
-      - name: Build Docker
+
+      - name: Build Docker image
         run: docker build -t app .
-        # Si el Dockerfile está en ./ActDocker/, usa: docker build -t app ./ActDocker
-      
-      - name: Run container
-        run: docker run -d -p 8080:80 app
+
+      - name: Run container in background
+        run: docker run -d --name test-app -p 8080:80 app
+
+      - name: Wait for container to be ready
+        run: sleep 3
+
+      - name: Test that the app responds
+        run: |
+          curl --fail http://localhost:8080 || exit 1
+
+      - name: Stop and remove container (cleanup)
+        run: docker stop test-app && docker rm test-app
